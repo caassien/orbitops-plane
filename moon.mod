@@ -18,4 +18,4 @@ keywords = [
 
 preferred_target = "wasm"
 
-description = "A deterministic and auditable operations control-plane core for MoonBit"
+description = "A deterministic, host-neutral change-planning and policy kernel for MoonBit"
