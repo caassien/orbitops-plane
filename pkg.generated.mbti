@@ -12,9 +12,13 @@ pub fn approve_reconciliation(Reconciliation) -> Reconciliation raise ModelError
 
 pub fn batch_plan(Plan, ChangeBudget) -> BatchedPlan raise ModelError
 
+pub fn batch_plan_with_dependencies(Plan, ChangeBudget, Array[(ResourceId, ResourceId)]) -> BatchedPlan raise ModelError
+
 pub fn begin_execution(Reconciliation, observed_generation~ : Int) -> Reconciliation raise ModelError
 
 pub fn build_ordered_plan(id~ : PlanId, operations~ : Array[Operation], dependencies~ : Array[(ResourceId, ResourceId)], baseline_generation~ : Int) -> Plan raise ModelError
+
+pub fn build_resource_plan(id~ : PlanId, desired~ : Array[DesiredState], observed~ : Array[ObservedState], dependencies~ : Array[(ResourceId, ResourceId)], baseline_generation~ : Int, budget~ : ChangeBudget) -> BatchedPlan raise ModelError
 
 pub fn compute_diff(DesiredState, ObservedState?) -> DiffResult raise ModelError
 
@@ -24,7 +28,11 @@ pub fn evaluate_reconciliation(Reconciliation, SafetyPolicy) -> Reconciliation r
 
 pub fn evaluate_safety_policy(ChangeBatch, SafetyPolicy) -> PolicyEvaluation raise ModelError
 
+pub fn next_reconciliation_operation(Reconciliation, observed_generation~ : Int) -> Operation raise ModelError
+
 pub fn reject_reconciliation(Reconciliation) -> Reconciliation raise ModelError
+
+pub fn replan_remaining(Reconciliation, id~ : PlanId, desired~ : Array[DesiredState], observed~ : Array[ObservedState], dependencies~ : Array[(ResourceId, ResourceId)], observed_generation~ : Int, budget~ : ChangeBudget) -> BatchedPlan raise ModelError
 
 pub fn replay_audit_events(BatchedPlan, Array[AuditEvent]) -> Reconciliation raise ModelError
 
@@ -49,6 +57,7 @@ pub(all) suberror ModelError {
   InvalidDependency(String)
   DependencyCycle(String)
   DuplicateOperation(String)
+  DuplicateResource(String)
   InvalidBudget(String)
   InvalidTransition(String)
   DuplicateFeedback(String)

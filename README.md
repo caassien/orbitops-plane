@@ -2,7 +2,7 @@
 
 OrbitOps Plane 是一个使用 MoonBit 构建的、与平台无关的变更决策内核，不是另一套运维平台。宿主系统提供期望状态、观测状态、资源依赖和安全策略，内核输出确定性的变更计划、审批要求、可执行批次和审计事件。
 
-项目将决策与执行解耦：核心负责差异识别、依赖排序、风险分级、变更预算、过期状态保护和审计；SSH、Kubernetes、云 API、节点代理等真实副作用继续由宿主执行。因此它可作为 MoonFlow、LunaNexa 或其他控制面的窄内核，而不是与这些产品争夺控制器、调度器、API 和持久化层的职责。
+项目将决策与执行解耦：核心负责整组资源差异识别、依赖排序与跨批次约束、风险分级、变更预算、逐动作过期保护和审计；SSH、Kubernetes、云 API、节点代理等真实副作用继续由宿主执行。因此它可作为 MoonFlow、LunaNexa 或其他控制面的窄内核，而不是与这些产品争夺控制器、调度器、API 和持久化层的职责。
 
 ## 具体问题与价值
 
@@ -11,13 +11,12 @@ OrbitOps Plane 是一个使用 MoonBit 构建的、与平台无关的变更决�
 OrbitOps Plane 把这些规则收敛为无网络、无凭据、无持久化依赖的纯 MoonBit 库。宿主在一个进程内完成以下流水线：
 
 ```text
-DesiredState + ObservedState + dependencies + SafetyPolicy
-  -> compute_diff
-  -> build_ordered_plan
-  -> batch_plan
+DesiredState[] + ObservedState[] + dependencies + snapshot generation
+  -> build_resource_plan (differences + order + dependency-safe batches)
   -> evaluate_reconciliation
-  -> approve / begin_execution
+  -> approve / begin_execution / next_reconciliation_operation
   -> ExecutionResult feedback
+  -> replan_remaining when a newer snapshot arrives
   -> replayable audit events
 ```
 
@@ -26,13 +25,13 @@ DesiredState + ObservedState + dependencies + SafetyPolicy
 - 相同输入产生相同计划，重复调和不生成多余动作。
 - 依赖资源先于其消费者变更，循环依赖在执行前被拒绝。
 - 删除、批量重启等高风险动作必须通过安全策略和审批。
-- 过期观测状态或失效计划不能进入执行阶段。
+- 每次派发动作前检查观测代数；新观测使旧计划失效，并按最新完整快照重新规划。
 - 每次允许、拒绝、审批和执行反馈都形成可追溯审计事件。
 - 执行器只返回结构化反馈，不把平台凭据、网络重试或服务发现耦合进核心。
 
 ## 三个可验收场景
 
-1. **依赖感知发布**：输入 `database/primary -> service/api -> worker/jobs`，计划必须稳定排序为数据库迁移、API 更新、Worker 扩容，并在单资源批次预算下逐个执行。运行 `moon run cmd/demo -- rollout` 可复现。
+1. **依赖感知发布**：输入 `database/primary -> service/api -> worker/jobs`，计划必须稳定排序为数据库配置更新、API 更新、Worker 扩容；即使并行预算为 2，依赖链仍逐批执行。运行 `moon run cmd/demo -- rollout` 可复现。
 2. **配置漂移修复**：期望配置与观测配置不一致时，核心生成最小修复动作；若观测 generation 已过期，则拒绝复用旧计划。运行 `moon run cmd/demo -- drift` 可复现。
 3. **故障处置保护**：同一批次出现多个重启、删除或关键资源操作时，核心要求人工审批；执行器报告失败后，后续操作停止并留下终止审计事件。运行 `moon run cmd/demo -- incident` 可复现。
 
@@ -78,11 +77,15 @@ moon run cmd/demo -- drift
 moon run cmd/demo -- incident
 ```
 
-`rollout` 按“数据库迁移 → API 更新 → Worker 扩容”的依赖顺序生成计划，使用单资源批次和内存执行器完成一次无副作用调和；`drift` 展示自动允许的配置修复以及过期观测拒绝；`incident` 展示高风险审批和指定动作失败后的停止。三个场景都会打印策略决定、执行反馈和审计事件，并使用固定计划标识和固定时钟保持输出可重复。
+`rollout` 从数据库、API、Worker 的整组期望/观测状态推导 `update → update → scale`，即使并行上限为 2，依赖链也拆成三个单资源批次；每次模拟派发前重新检查计划代数。`drift` 展示自动允许的配置修复以及过期观测拒绝；`incident` 展示高风险审批和指定动作失败后的停止。三个场景都会打印策略决定、执行反馈和审计事件，并使用固定计划标识和固定时钟保持输出可重复。
+
+宿主可调用 `build_resource_plan` 编译完整资源快照，经策略评估和审批后，用 `next_reconciliation_operation` 在每次派发前检查最新观测代数；收到反馈及更新后的完整快照时，调用 `replan_remaining` 生成新计划 ID 下仍有差异的动作，并重新执行策略评估。`resource_plan_test.mbt` 覆盖数据库成功后旧 API/Worker 动作被拒绝、按新快照只保留未收敛资源、穿过无需变更资源的传递依赖，以及独立资源共享并行预算。旧的 `batch_plan` 只按数量分批；需要依赖隔离时使用 `build_resource_plan` 或 `batch_plan_with_dependencies`。
+
+本项目不负责工作流执行、持久化和恢复。可由宿主把生成的批次转换成 MoonFlow 的 Work 图，由 MoonFlow 调度；OrbitOps Plane 的净职责是从资源状态推导动作及其快照前提，而非复制既有编排器。
 
 ## 0.1.0 发布准备
 
-当前模块版本为 `0.1.0`，公开接口摘要由 `moon info` 生成并纳入版本控制。本版本已有 72 个测试，覆盖确定性差异计算、依赖排序与循环依赖拒绝、变更预算、安全策略、调和生命周期、过期状态保护、可回放审计，以及内存执行器和三个端到端演示场景。
+当前模块版本为 `0.1.0`，公开接口摘要由 `moon info` 生成并纳入版本控制。当前源码有 79 个测试，覆盖整组资源状态规划、依赖排序与跨批次约束、变更预算、安全策略、调和生命周期、逐动作过期保护、重算与可回放审计，以及内存执行器和三个演示场景。发布时应重新核对版本号与接口兼容性。
 
 后续 `0.2.0` 的目标是稳定宿主适配接口、为计划和审计提供可序列化边界、增加输入排列不变性测试，并发布到 mooncakes.io。明确不在该版本内加入服务器、Agent、凭据管理、具体云厂商 SDK、持久化数据库或 UI。
 

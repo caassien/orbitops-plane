@@ -10,20 +10,6 @@ fn resource_index(resources : Array[ResourceId], resource : ResourceId) -> Int? 
 }
 
 ///|
-fn operation_index(
-  operations : Array[Operation],
-  resource : ResourceId,
-) -> Int? {
-  let mut result : Int? = None
-  for i, operation in operations {
-    if result is None && operation.resource == resource {
-      result = Some(i)
-    }
-  }
-  result
-}
-
-///|
 fn collect_resources(
   operations : Array[Operation],
   dependencies : Array[(ResourceId, ResourceId)],
@@ -127,20 +113,17 @@ fn order_operations(
     indegree.push(0)
     selected.push(false)
   }
-  for i in 0..<dependencies.length() {
-    let (dependency, dependent) = dependencies[i]
-    match
-      (
-        operation_index(operations, dependency),
-        operation_index(operations, dependent),
-      ) {
-      (Some(dependency_index), Some(dependent_index)) =>
-        if reverse_dependencies {
-          add_order_edge(adjacency, indegree, dependent_index, dependency_index)
-        } else {
-          add_order_edge(adjacency, indegree, dependency_index, dependent_index)
-        }
-      _ => ()
+  for source in 0..<operations.length() {
+    for target in 0..<operations.length() {
+      if source != target &&
+        dependency_path_exists(
+          operations[source].resource,
+          operations[target].resource,
+          dependencies,
+          reverse_dependencies,
+        ) {
+        add_order_edge(adjacency, indegree, source, target)
+      }
     }
   }
   let order : Array[Int] = []

@@ -100,12 +100,95 @@ pub fn batch_plan(
   plan : Plan,
   budget : ChangeBudget,
 ) -> BatchedPlan raise ModelError {
+  batch_plan_internal(plan, budget, [])
+}
+
+///|
+fn dependency_path_exists(
+  source : ResourceId,
+  target : ResourceId,
+  dependencies : Array[(ResourceId, ResourceId)],
+  reverse_dependencies : Bool,
+) -> Bool {
+  let visited : Array[ResourceId] = [source]
+  let mut index = 0
+  while index < visited.length() {
+    let current = visited[index]
+    for edge in dependencies {
+      let (dependency, dependent) = edge
+      let from = if reverse_dependencies { dependent } else { dependency }
+      let to = if reverse_dependencies { dependency } else { dependent }
+      if from == current {
+        if to == target {
+          return true
+        }
+        if !contains_resource_id(visited, to) {
+          visited.push(to)
+        }
+      }
+    }
+    index += 1
+  }
+  false
+}
+
+///|
+fn batch_has_predecessor(
+  current : Array[Operation],
+  candidate : Operation,
+  dependencies : Array[(ResourceId, ResourceId)],
+  reverse_dependencies : Bool,
+) -> Bool {
+  for operation in current {
+    if dependency_path_exists(
+        operation.resource,
+        candidate.resource,
+        dependencies,
+        reverse_dependencies,
+      ) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Batches a dependency-ordered plan. A dependent cannot share a batch with
+/// any predecessor, including one connected through an unchanged resource.
+pub fn batch_plan_with_dependencies(
+  plan : Plan,
+  budget : ChangeBudget,
+  dependencies : Array[(ResourceId, ResourceId)],
+) -> BatchedPlan raise ModelError {
+  let ordered = order_operations(
+    plan.operations,
+    dependencies,
+    reverse_dependencies=only_deletes(plan.operations),
+  )
+  for index in 0..<ordered.length() {
+    if ordered[index] != plan.operations[index] {
+      raise ModelError::InvalidDependency("plan is not dependency ordered")
+    }
+  }
+  batch_plan_internal(plan, budget, dependencies)
+}
+
+///|
+fn batch_plan_internal(
+  plan : Plan,
+  budget : ChangeBudget,
+  dependencies : Array[(ResourceId, ResourceId)],
+) -> BatchedPlan raise ModelError {
   if budget.max_parallel <= 0 {
     raise ModelError::InvalidBudget("max_parallel must be positive")
   }
   if budget.max_affected_resources <= 0 {
     raise ModelError::InvalidBudget("max_affected_resources must be positive")
   }
+  let resources = collect_resources(plan.operations, dependencies)
+  validate_resource_dependencies(resources, dependencies)
+  validate_unique_operations(plan.operations)
+  let reverse_dependencies = only_deletes(plan.operations)
   let batches : Array[ChangeBatch] = []
   let mut current : Array[Operation] = []
   for operation in plan.operations {
@@ -121,7 +204,11 @@ pub fn batch_plan(
       add_batch(batches, current)
       current = []
       add_batch(batches, [operation])
-    } else if exceeds_parallel || exceeds_resources {
+    } else if exceeds_parallel ||
+      exceeds_resources ||
+      batch_has_predecessor(
+        current, operation, dependencies, reverse_dependencies,
+      ) {
       add_batch(batches, current)
       current = [operation]
     } else {

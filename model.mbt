@@ -8,6 +8,7 @@ pub(all) suberror ModelError {
   InvalidDependency(String)
   DependencyCycle(String)
   DuplicateOperation(String)
+  DuplicateResource(String)
   InvalidBudget(String)
   InvalidTransition(String)
   DuplicateFeedback(String)

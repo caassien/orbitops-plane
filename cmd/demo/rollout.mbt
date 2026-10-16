@@ -7,12 +7,38 @@ fn rollout_resource(
 }
 
 ///|
-fn rollout_operation(
+fn rollout_spec(
+  version : String,
+  replicas : Int,
+  config : String,
+) -> @orbitops_plane.ResourceSpec raise @orbitops_plane.ModelError {
+  @orbitops_plane.ResourceSpec::new(
+    version~,
+    replicas~,
+    config_fingerprint=config,
+    enabled=true,
+  )
+}
+
+///|
+fn rollout_desired(
   resource : @orbitops_plane.ResourceId,
-  action : @orbitops_plane.ActionKind,
-  reason~ : String,
-) -> @orbitops_plane.Operation raise @orbitops_plane.ModelError {
-  @orbitops_plane.Operation::new(resource~, action~, reason~)
+  spec : @orbitops_plane.ResourceSpec,
+) -> @orbitops_plane.DesiredState raise @orbitops_plane.ModelError {
+  @orbitops_plane.DesiredState::new(resource~, spec~, generation=2)
+}
+
+///|
+fn rollout_observed(
+  resource : @orbitops_plane.ResourceId,
+  spec : @orbitops_plane.ResourceSpec,
+) -> @orbitops_plane.ObservedState raise @orbitops_plane.ModelError {
+  @orbitops_plane.ObservedState::new(
+    resource~,
+    spec~,
+    generation=1,
+    healthy=true,
+  )
 }
 
 ///|
@@ -20,37 +46,28 @@ fn build_rollout() -> @orbitops_plane.BatchedPlan raise @orbitops_plane.ModelErr
   let database = try! rollout_resource(kind="database", name="primary")
   let api = try! rollout_resource(kind="service", name="api")
   let worker = try! rollout_resource(kind="worker", name="jobs")
-  let operations = [
-    try! rollout_operation(
-      database,
-      @orbitops_plane.ActionKind::Update,
-      reason="apply schema migration",
-    ),
-    try! rollout_operation(
-      api,
-      @orbitops_plane.ActionKind::Update,
-      reason="roll out API version",
-    ),
-    try! rollout_operation(
-      worker,
-      @orbitops_plane.ActionKind::Scale,
-      reason="increase worker capacity",
-    ),
+  let desired = [
+    try! rollout_desired(database, try! rollout_spec("v1", 1, "db-v2")),
+    try! rollout_desired(api, try! rollout_spec("v2", 2, "api")),
+    try! rollout_desired(worker, try! rollout_spec("v1", 4, "worker")),
+  ]
+  let observed = [
+    try! rollout_observed(database, try! rollout_spec("v1", 1, "db-v1")),
+    try! rollout_observed(api, try! rollout_spec("v1", 2, "api")),
+    try! rollout_observed(worker, try! rollout_spec("v1", 2, "worker")),
   ]
   let dependencies : Array[
     (@orbitops_plane.ResourceId, @orbitops_plane.ResourceId),
   ] = [(database, api), (api, worker)]
-  let ordered = @orbitops_plane.build_ordered_plan(
+  @orbitops_plane.build_resource_plan(
     id=@testing.fixed_plan_id(),
-    operations~,
+    desired~,
+    observed~,
     dependencies~,
     baseline_generation=1,
-  )
-  @orbitops_plane.batch_plan(
-    ordered,
-    @orbitops_plane.ChangeBudget::new(
-      max_parallel=1,
-      max_affected_resources=1,
+    budget=@orbitops_plane.ChangeBudget::new(
+      max_parallel=2,
+      max_affected_resources=2,
       isolate_high_risk=false,
     ),
   )
@@ -62,8 +79,8 @@ fn execute_rollout(
 ) -> @orbitops_plane.Reconciliation raise @orbitops_plane.ModelError {
   let policy = @orbitops_plane.SafetyPolicy::new(
     critical_resources=[],
-    max_batch_operations=1,
-    max_affected_resources=1,
+    max_batch_operations=2,
+    max_affected_resources=2,
   )
   let started = @orbitops_plane.start_reconciliation(
     plan,
@@ -71,12 +88,16 @@ fn execute_rollout(
   )
   let ready = @orbitops_plane.evaluate_reconciliation(started, policy)
   let executing = @orbitops_plane.begin_execution(ready, observed_generation=1)
-  let run = @testing.fixed_executor(script=@testing.success_script()).run(
-    plan.plan.operations,
-  )
   let mut current = executing
-  for result in run.results() {
-    current = @orbitops_plane.apply_execution_result(current, result)
+  while current.state == @orbitops_plane.ReconciliationState::Executing {
+    let operation = @orbitops_plane.next_reconciliation_operation(
+      current,
+      observed_generation=1,
+    )
+    let run = @testing.fixed_executor(script=@testing.success_script()).run([
+      operation,
+    ])
+    current = @orbitops_plane.apply_execution_result(current, run.results()[0])
   }
   current
 }
