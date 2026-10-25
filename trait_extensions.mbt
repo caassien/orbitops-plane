@@ -196,3 +196,39 @@ pub extend PlanValidationInput with @moonbitlang/core/debug.Debug::{to_repr}
 
 ///|
 pub extend PlanValidationInput with Eq::{not_equal, equal}
+
+///|
+pub extend ActionExplanation with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ActionExplanation with Eq::{not_equal, equal}
+
+///|
+pub extend PlanExplanation with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend PlanExplanation with Eq::{not_equal, equal}
+
+///|
+pub extend ModifiedAction with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ModifiedAction with Eq::{not_equal, equal}
+
+///|
+pub extend OrderChange with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend OrderChange with Eq::{not_equal, equal}
+
+///|
+pub extend RiskChange with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend RiskChange with Eq::{not_equal, equal}
+
+///|
+pub extend PlanComparison with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend PlanComparison with Eq::{not_equal, equal}

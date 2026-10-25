@@ -20,6 +20,8 @@ pub fn build_ordered_plan(id~ : PlanId, operations~ : Array[Operation], dependen
 
 pub fn build_resource_plan(id~ : PlanId, desired~ : Array[DesiredState], observed~ : Array[ObservedState], dependencies~ : Array[(ResourceId, ResourceId)], baseline_generation~ : Int, budget~ : ChangeBudget) -> BatchedPlan raise ModelError
 
+pub fn compare_change_plans(Plan, Plan, SafetyPolicy) -> PlanComparison raise ModelError
+
 pub fn compute_diff(DesiredState, ObservedState?) -> DiffResult raise ModelError
 
 pub fn evaluate_operation_safety(Operation, SafetyPolicy) -> PolicyEvaluation raise ModelError
@@ -27,6 +29,8 @@ pub fn evaluate_operation_safety(Operation, SafetyPolicy) -> PolicyEvaluation ra
 pub fn evaluate_reconciliation(Reconciliation, SafetyPolicy) -> Reconciliation raise ModelError
 
 pub fn evaluate_safety_policy(ChangeBatch, SafetyPolicy) -> PolicyEvaluation raise ModelError
+
+pub fn explain_change_plan(BatchedPlan, Array[DesiredState], ObservationSnapshot, Array[(ResourceId, ResourceId)], SafetyPolicy) -> PlanExplanation raise ModelError
 
 pub fn next_reconciliation_operation(Reconciliation, observed_generation~ : Int) -> Operation raise ModelError
 
@@ -73,6 +77,20 @@ pub fn ModelError::not_equal(Self, Self) -> Bool
 pub fn ModelError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct ActionExplanation {
+  operation : Operation
+  changed_fields : Array[String]
+  predecessors : Array[ResourceId]
+  snapshot_generation : Int
+  policy_decision : PolicyDecision
+  risk : RiskLevel
+  policy_reason : PolicyReasonCode
+} derive(Eq, @debug.Debug)
+pub fn ActionExplanation::equal(Self, Self) -> Bool
+pub fn ActionExplanation::not_equal(Self, Self) -> Bool
+pub fn ActionExplanation::to_json(Self) -> Json
+pub fn ActionExplanation::to_repr(Self) -> @debug.Repr
+
 pub(all) enum ActionKind {
   Create
   Update
@@ -215,6 +233,15 @@ pub fn ExecutionState::equal(Self, Self) -> Bool
 pub fn ExecutionState::not_equal(Self, Self) -> Bool
 pub fn ExecutionState::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ModifiedAction {
+  resource : ResourceId
+  before : Operation
+  after : Operation
+} derive(Eq, @debug.Debug)
+pub fn ModifiedAction::equal(Self, Self) -> Bool
+pub fn ModifiedAction::not_equal(Self, Self) -> Bool
+pub fn ModifiedAction::to_repr(Self) -> @debug.Repr
+
 pub(all) struct ObservationSnapshot {
   generation : Int
   states : Array[ObservedState]
@@ -245,6 +272,15 @@ pub fn Operation::new(resource~ : ResourceId, action~ : ActionKind, reason~ : St
 pub fn Operation::not_equal(Self, Self) -> Bool
 pub fn Operation::to_repr(Self) -> @debug.Repr
 
+pub(all) struct OrderChange {
+  resource : ResourceId
+  before_index : Int
+  after_index : Int
+} derive(Eq, @debug.Debug)
+pub fn OrderChange::equal(Self, Self) -> Bool
+pub fn OrderChange::not_equal(Self, Self) -> Bool
+pub fn OrderChange::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Plan {
   id : PlanId
   operations : Array[Operation]
@@ -255,6 +291,30 @@ pub fn Plan::equal(Self, Self) -> Bool
 pub fn Plan::new(id~ : PlanId, operations~ : Array[Operation], baseline_generation~ : Int) -> Self raise ModelError
 pub fn Plan::not_equal(Self, Self) -> Bool
 pub fn Plan::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PlanComparison {
+  added : Array[Operation]
+  removed : Array[Operation]
+  modified : Array[ModifiedAction]
+  reordered : Array[OrderChange]
+  risk_changed : Array[RiskChange]
+  before_generation : Int
+  after_generation : Int
+} derive(Eq, @debug.Debug)
+pub fn PlanComparison::equal(Self, Self) -> Bool
+pub fn PlanComparison::not_equal(Self, Self) -> Bool
+pub fn PlanComparison::to_json(Self) -> Json
+pub fn PlanComparison::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PlanExplanation {
+  plan_id : PlanId
+  snapshot_generation : Int
+  actions : Array[ActionExplanation]
+} derive(Eq, @debug.Debug)
+pub fn PlanExplanation::equal(Self, Self) -> Bool
+pub fn PlanExplanation::not_equal(Self, Self) -> Bool
+pub fn PlanExplanation::to_json(Self) -> Json
+pub fn PlanExplanation::to_repr(Self) -> @debug.Repr
 
 pub(all) struct PlanId {
   value : String
@@ -357,6 +417,15 @@ pub fn ResourceSpec::equal(Self, Self) -> Bool
 pub fn ResourceSpec::new(version~ : String, replicas~ : Int, config_fingerprint~ : String, enabled~ : Bool) -> Self raise ModelError
 pub fn ResourceSpec::not_equal(Self, Self) -> Bool
 pub fn ResourceSpec::to_repr(Self) -> @debug.Repr
+
+pub(all) struct RiskChange {
+  resource : ResourceId
+  before : RiskLevel
+  after : RiskLevel
+} derive(Eq, @debug.Debug)
+pub fn RiskChange::equal(Self, Self) -> Bool
+pub fn RiskChange::not_equal(Self, Self) -> Bool
+pub fn RiskChange::to_repr(Self) -> @debug.Repr
 
 pub(all) enum RiskLevel {
   Low
