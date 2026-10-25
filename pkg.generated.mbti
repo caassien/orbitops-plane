@@ -40,6 +40,8 @@ pub fn start_reconciliation(BatchedPlan, observed_generation~ : Int) -> Reconcil
 
 pub fn terminate_reconciliation(Reconciliation) -> Reconciliation raise ModelError
 
+pub fn validate_change_plan(PlanValidationInput) -> ValidationResult
+
 pub fn validate_feedback_plan(Plan, ExecutionResult) -> Unit raise ModelError
 
 pub fn validate_plan_freshness(Plan, observed_generation~ : Int) -> Unit raise ModelError
@@ -213,6 +215,15 @@ pub fn ExecutionState::equal(Self, Self) -> Bool
 pub fn ExecutionState::not_equal(Self, Self) -> Bool
 pub fn ExecutionState::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ObservationSnapshot {
+  generation : Int
+  states : Array[ObservedState]
+  absent : Array[ResourceId]
+} derive(Eq, @debug.Debug)
+pub fn ObservationSnapshot::equal(Self, Self) -> Bool
+pub fn ObservationSnapshot::not_equal(Self, Self) -> Bool
+pub fn ObservationSnapshot::to_repr(Self) -> @debug.Repr
+
 pub(all) struct ObservedState {
   resource : ResourceId
   spec : ResourceSpec
@@ -252,6 +263,21 @@ pub fn PlanId::equal(Self, Self) -> Bool
 pub fn PlanId::new(value~ : String) -> Self raise ModelError
 pub fn PlanId::not_equal(Self, Self) -> Bool
 pub fn PlanId::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PlanValidationInput {
+  plan : BatchedPlan
+  desired : Array[DesiredState]
+  snapshot : ObservationSnapshot
+  dependencies : Array[(ResourceId, ResourceId)]
+  budget : ChangeBudget
+  policy : SafetyPolicy
+  approval : ApprovalState
+  feedback : Array[ExecutionResult]
+  dispatch_index : Int
+} derive(Eq, @debug.Debug)
+pub fn PlanValidationInput::equal(Self, Self) -> Bool
+pub fn PlanValidationInput::not_equal(Self, Self) -> Bool
+pub fn PlanValidationInput::to_repr(Self) -> @debug.Repr
 
 pub(all) enum PolicyDecision {
   Allow
@@ -351,6 +377,56 @@ pub fn SafetyPolicy::equal(Self, Self) -> Bool
 pub fn SafetyPolicy::new(critical_resources~ : Array[ResourceId], max_batch_operations~ : Int, max_affected_resources~ : Int) -> Self raise ModelError
 pub fn SafetyPolicy::not_equal(Self, Self) -> Bool
 pub fn SafetyPolicy::to_repr(Self) -> @debug.Repr
+
+pub(all) enum ValidationCode {
+  InvalidSnapshot
+  StaleSnapshot
+  UnknownResource
+  ConflictingObservation
+  InvalidInput
+  PlanMismatch
+  DependencyOrder
+  BatchConflict
+  BudgetExceeded
+  PolicyDenied
+  ApprovalRequired
+  InvalidFeedback
+  DuplicateFeedback
+  PredecessorIncomplete
+  FailedOperation
+} derive(Eq, @debug.Debug)
+pub fn ValidationCode::equal(Self, Self) -> Bool
+pub fn ValidationCode::not_equal(Self, Self) -> Bool
+pub fn ValidationCode::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ValidationIssue {
+  code : ValidationCode
+  resource : ResourceId?
+  action : ActionKind?
+  risk : RiskLevel
+  explanation : String
+} derive(Eq, @debug.Debug)
+pub fn ValidationIssue::equal(Self, Self) -> Bool
+pub fn ValidationIssue::not_equal(Self, Self) -> Bool
+pub fn ValidationIssue::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ValidationResult {
+  status : ValidationStatus
+  issues : Array[ValidationIssue]
+  risk : RiskLevel
+} derive(Eq, @debug.Debug)
+pub fn ValidationResult::equal(Self, Self) -> Bool
+pub fn ValidationResult::not_equal(Self, Self) -> Bool
+pub fn ValidationResult::to_repr(Self) -> @debug.Repr
+
+pub(all) enum ValidationStatus {
+  Valid
+  Invalid
+  Stale
+} derive(Eq, @debug.Debug)
+pub fn ValidationStatus::equal(Self, Self) -> Bool
+pub fn ValidationStatus::not_equal(Self, Self) -> Bool
+pub fn ValidationStatus::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

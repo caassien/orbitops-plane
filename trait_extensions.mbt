@@ -160,3 +160,39 @@ pub extend Reconciliation with @moonbitlang/core/debug.Debug::{to_repr}
 
 ///|
 pub extend Reconciliation with Eq::{not_equal, equal}
+
+///|
+pub extend ObservationSnapshot with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ObservationSnapshot with Eq::{not_equal, equal}
+
+///|
+pub extend ValidationStatus with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ValidationStatus with Eq::{not_equal, equal}
+
+///|
+pub extend ValidationCode with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ValidationCode with Eq::{not_equal, equal}
+
+///|
+pub extend ValidationIssue with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ValidationIssue with Eq::{not_equal, equal}
+
+///|
+pub extend ValidationResult with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ValidationResult with Eq::{not_equal, equal}
+
+///|
+pub extend PlanValidationInput with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend PlanValidationInput with Eq::{not_equal, equal}
