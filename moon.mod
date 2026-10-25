@@ -19,3 +19,7 @@ keywords = [
 preferred_target = "wasm"
 
 description = "A deterministic, host-neutral change-planning and policy kernel for MoonBit"
+
+import {
+  "cxh04/kubemoon@0.1.1",
+}

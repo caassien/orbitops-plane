@@ -1,0 +1,9 @@
+import {
+  "caassien/orbitops_plane",
+  "cxh04/kubemoon/object",
+  "cxh04/kubemoon/configmirror",
+}
+
+supported_targets = "native"
+
+pkgtype(kind: "executable")
