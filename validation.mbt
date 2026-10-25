@@ -417,3 +417,69 @@ pub fn validate_change_plan(input : PlanValidationInput) -> ValidationResult {
   }
   { status, issues, risk, }
 }
+
+///|
+fn validation_status_name(status : ValidationStatus) -> String {
+  match status {
+    ValidationStatus::Valid => "valid"
+    ValidationStatus::Invalid => "invalid"
+    ValidationStatus::Stale => "stale"
+  }
+}
+
+///|
+fn validation_code_name(code : ValidationCode) -> String {
+  match code {
+    ValidationCode::InvalidSnapshot => "invalid_snapshot"
+    ValidationCode::StaleSnapshot => "stale_snapshot"
+    ValidationCode::UnknownResource => "unknown_resource"
+    ValidationCode::ConflictingObservation => "conflicting_observation"
+    ValidationCode::InvalidInput => "invalid_input"
+    ValidationCode::PlanMismatch => "plan_mismatch"
+    ValidationCode::DependencyOrder => "dependency_order"
+    ValidationCode::BatchConflict => "batch_conflict"
+    ValidationCode::BudgetExceeded => "budget_exceeded"
+    ValidationCode::PolicyDenied => "policy_denied"
+    ValidationCode::ApprovalRequired => "approval_required"
+    ValidationCode::InvalidFeedback => "invalid_feedback"
+    ValidationCode::DuplicateFeedback => "duplicate_feedback"
+    ValidationCode::PredecessorIncomplete => "predecessor_incomplete"
+    ValidationCode::FailedOperation => "failed_operation"
+  }
+}
+
+///|
+pub fn ValidationIssue::to_json(self : ValidationIssue) -> Json {
+  let resource = match self.resource {
+    Some(value) => explanation_resource_json(value)
+    None => Json::null()
+  }
+  let action = match self.action {
+    Some(value) => Json::string(explanation_action_name(value))
+    None => Json::null()
+  }
+  Json::object(
+    Map([
+      ("code", Json::string(validation_code_name(self.code))),
+      ("resource", resource),
+      ("action", action),
+      ("risk", Json::string(explanation_risk_name(self.risk))),
+      ("explanation", Json::string(self.explanation)),
+    ]),
+  )
+}
+
+///|
+pub fn ValidationResult::to_json(self : ValidationResult) -> Json {
+  let issues : Array[Json] = []
+  for issue in self.issues {
+    issues.push(issue.to_json())
+  }
+  Json::object(
+    Map([
+      ("status", Json::string(validation_status_name(self.status))),
+      ("risk", Json::string(explanation_risk_name(self.risk))),
+      ("issues", Json::array(issues)),
+    ]),
+  )
+}

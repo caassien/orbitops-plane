@@ -1,0 +1,4 @@
+members = [
+  ".",
+  "./examples/external_consumer",
+]

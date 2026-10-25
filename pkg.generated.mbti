@@ -477,6 +477,7 @@ pub(all) struct ValidationIssue {
 } derive(Eq, @debug.Debug)
 pub fn ValidationIssue::equal(Self, Self) -> Bool
 pub fn ValidationIssue::not_equal(Self, Self) -> Bool
+pub fn ValidationIssue::to_json(Self) -> Json
 pub fn ValidationIssue::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ValidationResult {
@@ -486,6 +487,7 @@ pub(all) struct ValidationResult {
 } derive(Eq, @debug.Debug)
 pub fn ValidationResult::equal(Self, Self) -> Bool
 pub fn ValidationResult::not_equal(Self, Self) -> Bool
+pub fn ValidationResult::to_json(Self) -> Json
 pub fn ValidationResult::to_repr(Self) -> @debug.Repr
 
 pub(all) enum ValidationStatus {

@@ -127,6 +127,9 @@ test "a global snapshot change is stale even if unrelated" {
   assert_true(
     has_validation_code(result, @orbitops_plane.ValidationCode::StaleSnapshot),
   )
+  let serialized = result.to_json().stringify()
+  assert_true(serialized.contains("\"status\":\"stale\""))
+  assert_true(serialized.contains("\"code\":\"stale_snapshot\""))
 }
 
 ///|
