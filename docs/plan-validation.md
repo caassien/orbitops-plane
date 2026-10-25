@@ -12,7 +12,7 @@ OrbitOps Plane 的公开入口是 [`build_resource_plan`](../resource_plan.mbt)�
 
 ## 解释与计划比较
 
-`explain_change_plan` 为动作列出变化的**字段名**、直接前置资源、快照代数、策略决定和风险。字段值不进入解释 JSON；先调用 `validate_change_plan`，再把解释标为“可派发”。`PlanExplanation::to_json` 和 `ActionExplanation::to_json` 提供 JSON 值。`compare_change_plans` 报告新增、删除、修改、零基索引变化、动作风险变化及基线代数变化；`PlanComparison::to_json` 可用于 UI 或日志。索引变化表示同一资源在两个计划数组中的位置不同，新增动作也可能使后续索引变化。
+`explain_change_plan` 为动作列出变化的**字段名**、直接前置资源、快照代数、策略决定和风险。字段值和调用方可填写的 `Operation.reason` 不进入解释/比较 JSON；先调用 `validate_change_plan`，再把解释标为“可派发”。`PlanExplanation::to_json` 和 `ActionExplanation::to_json` 提供 JSON 值。`compare_change_plans` 报告新增、删除、修改、零基索引变化、动作风险变化及基线代数变化；`PlanComparison::to_json` 可用于 UI 或日志。索引变化表示同一资源在两个计划数组中的位置不同，新增动作也可能使后续索引变化。
 
 ## JSON 输入输出约定
 

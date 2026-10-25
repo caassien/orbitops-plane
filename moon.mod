@@ -10,15 +10,15 @@ license = "Apache-2.0"
 
 keywords = [
   "operations",
-  "control-plane",
-  "reconciliation",
+  "plan-validation",
+  "dependency-planning",
   "policy",
   "audit",
 ]
 
 preferred_target = "wasm"
 
-description = "A deterministic, host-neutral change-planning and policy kernel for MoonBit"
+description = "Embeddable resource change-plan validation and safety decisions for MoonBit"
 
 import {
   "cxh04/kubemoon@0.1.1",

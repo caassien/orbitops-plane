@@ -299,3 +299,65 @@ test "batch tampering and approval requirement are independently reported" {
     ),
   )
 }
+
+///|
+test "an oversized dispatch batch reports a budget violation" {
+  let input = try! validation_fixture()
+  let tight_budget = try! @orbitops_plane.ChangeBudget::new(
+    max_parallel=1,
+    max_affected_resources=1,
+    isolate_high_risk=false,
+  )
+  let combined : @orbitops_plane.BatchedPlan = {
+    plan: input.plan.plan,
+    batches: [{ operations: input.plan.plan.operations, }],
+  }
+  let request : @orbitops_plane.PlanValidationInput = {
+    plan: combined,
+    desired: input.desired,
+    snapshot: input.snapshot,
+    dependencies: input.dependencies,
+    budget: tight_budget,
+    policy: input.policy,
+    approval: input.approval,
+    feedback: [],
+    dispatch_index: 0,
+  }
+  let result = @orbitops_plane.validate_change_plan(request)
+  assert_eq(result.status, @orbitops_plane.ValidationStatus::Invalid)
+  assert_true(
+    has_validation_code(result, @orbitops_plane.ValidationCode::BudgetExceeded),
+  )
+  assert_true(
+    has_validation_code(result, @orbitops_plane.ValidationCode::BatchConflict),
+  )
+}
+
+///|
+test "an explicitly absent resource can be planned for creation" {
+  let input = try! validation_fixture()
+  let observed = [input.snapshot.states[0]]
+  let missing = input.desired[0].resource
+  let plan = try! @orbitops_plane.build_resource_plan(
+    id=input.plan.plan.id,
+    desired=input.desired,
+    observed~,
+    dependencies=input.dependencies,
+    baseline_generation=1,
+    budget=input.budget,
+  )
+  let request : @orbitops_plane.PlanValidationInput = {
+    plan,
+    desired: input.desired,
+    snapshot: { generation: 1, states: observed, absent: [missing], },
+    dependencies: input.dependencies,
+    budget: input.budget,
+    policy: input.policy,
+    approval: input.approval,
+    feedback: [],
+    dispatch_index: 0,
+  }
+  let result = @orbitops_plane.validate_change_plan(request)
+  assert_eq(result.status, @orbitops_plane.ValidationStatus::Valid)
+  assert_eq(plan.plan.operations[1].action, @orbitops_plane.ActionKind::Create)
+}

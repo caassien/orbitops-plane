@@ -305,7 +305,6 @@ fn explanation_operation_json(operation : Operation) -> Json {
     Map([
       ("resource", explanation_resource_json(operation.resource)),
       ("action", Json::string(explanation_action_name(operation.action))),
-      ("reason", Json::string(operation.reason)),
     ]),
   )
 }

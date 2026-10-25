@@ -107,4 +107,20 @@ test "plan comparison reports additions removals modifications and risk" {
   let serialized = compared.to_json().stringify()
   assert_true(serialized.contains("risk_changed"))
   assert_true(serialized.contains("before_generation"))
+  let secret_reason = try! @orbitops_plane.Operation::new(
+    resource=worker,
+    action=@orbitops_plane.ActionKind::Create,
+    reason="credential=private-value",
+  )
+  let secret_plan = try! @orbitops_plane.Plan::new(
+    id=try! @orbitops_plane.PlanId::new(value="secret-plan"),
+    operations=[secret_reason],
+    baseline_generation=3,
+  )
+  let safe_comparison = try! @orbitops_plane.compare_change_plans(
+    after,
+    secret_plan,
+    input.policy,
+  )
+  assert_true(!safe_comparison.to_json().stringify().contains("private-value"))
 }
