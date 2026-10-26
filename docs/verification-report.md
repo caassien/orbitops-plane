@@ -30,6 +30,6 @@
 ## 已核对的发布边界
 
 - 根模块 `caassien/orbitops_plane` 当前版本仍为 `0.1.0`，仓库、README、描述和关键词已与“计划验证与安全决策库”定位对齐；`LICENSE` 与 `moon.mod` 均标注 Apache-2.0。
-- KubeMoon 直接依赖固定为 `0.1.1`，Mooncakes 元数据显示其为 Apache-2.0；其 `configmirror` 包只支持 native，因此该示例声明 native。核心库及两个无 Kubernetes 用例已通过四个后端检查与测试。
+- KubeMoon 直接依赖只在独立示例模块中固定为 `0.1.1`，Mooncakes 元数据显示其为 Apache-2.0；其 `configmirror` 包只支持 native，因此该示例声明 native。根模块不依赖 KubeMoon；核心库及两个无 Kubernetes 用例已通过四个后端检查与测试。
 - 实际注册表发布、空白项目从 Mooncakes 安装、真实 Kubernetes 集群调用和生产审批/执行链路**尚未验证**。发布前仍需作者登录 Mooncakes 并重新运行 `moon publish --dry-run`；正式发布、标签和版本策略由作者确认。
 - 快照完整性与递增代数由宿主保证；KubeMoon 的不透明 `resourceVersion` 不能直接当作 OrbitOps 的整数代数。验证 API 返回安全决策，不替代 Kubernetes 写入时的并发检查，也不提供审计持久化。

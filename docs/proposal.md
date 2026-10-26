@@ -5,7 +5,7 @@
 - **项目名称**：OrbitOps Plane——可嵌入的资源变更计划验证与安全决策库
 - **作者**：GitHub `caassien`；联系邮箱 `3501146946@qq.com`
 - **仓库**：<https://github.com/caassien/orbitops-plane>
-- **实现与许可证**：原创 MoonBit 实现，Apache-2.0；直接依赖的 `cxh04/kubemoon@0.1.1` 也为 Apache-2.0
+- **实现与许可证**：原创 MoonBit 实现，Apache-2.0；独立集成示例依赖的 `cxh04/kubemoon@0.1.1` 也为 Apache-2.0，核心模块不依赖它
 
 ## 要解决的具体问题
 

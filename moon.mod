@@ -19,7 +19,3 @@ keywords = [
 preferred_target = "wasm"
 
 description = "Embeddable resource change-plan validation and safety decisions for MoonBit"
-
-import {
-  "cxh04/kubemoon@0.1.1",
-}

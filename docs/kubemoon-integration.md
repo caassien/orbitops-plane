@@ -1,6 +1,6 @@
 # KubeMoon 边界集成示例
 
-此示例直接依赖 `cxh04/kubemoon@0.1.1`（Apache-2.0），代码在 [`examples/kubemoon_bridge`](../examples/kubemoon_bridge/)；KubeMoon 的 `configmirror` 包声明 `supported_targets = "native"`，因此示例只在 native 目标构建。OrbitOps 核心仍是独立的决策库。依赖版本由 [`moon.mod`](../moon.mod) 固定；未复制 KubeMoon 的控制器、队列、WATCH 或 HTTP 实现。
+此示例是带独立 [`moon.mod`](../examples/kubemoon_bridge/moon.mod) 的 MoonBit 模块，直接依赖 `cxh04/kubemoon@0.1.1`（Apache-2.0）；KubeMoon 的 `configmirror` 包声明 `supported_targets = "native"`，因此示例只在 native 目标构建。OrbitOps [核心模块](../moon.mod) 不依赖 KubeMoon；未复制它的控制器、队列、WATCH 或 HTTP 实现。
 
 ## 使用的真实公开 API
 

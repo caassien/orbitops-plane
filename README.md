@@ -28,7 +28,7 @@ moon run cmd/demo -- drift
 moon run cmd/demo -- incident
 ```
 
-直接依赖 `cxh04/kubemoon@0.1.1` 的 [边界示例](docs/kubemoon-integration.md) 使用 KubeMoon `DynamicObject` 与 `content_hash` 构造测试输入，演示旧计划过期和剩余动作重算。KubeMoon `configmirror` 仅支持 native，运行：
+带独立 `moon.mod`、直接依赖 `cxh04/kubemoon@0.1.1` 的 [边界示例](docs/kubemoon-integration.md) 使用 KubeMoon `DynamicObject` 与 `content_hash` 构造测试输入，演示旧计划过期和剩余动作重算。KubeMoon `configmirror` 仅支持 native，运行：
 
 ```bash
 moon run --target native examples/kubemoon_bridge
@@ -47,7 +47,7 @@ moon test --deny-warn
 
 ## 验证与边界
 
-项目使用 Apache-2.0 许可证；新增的 KubeMoon 依赖也是 Apache-2.0，固定在 `0.1.1`。本仓库没有引入 Kubernetes API Client、LIST/WATCH、工作队列、远程执行器、服务端或数据库。安全验证由宿主在每次派发前调用，并由宿主在真实写入时再次执行平台并发保护；它不是授权系统。
+项目使用 Apache-2.0 许可证；KubeMoon 依赖也是 Apache-2.0，仅由独立示例模块固定在 `0.1.1`，核心模块不依赖它。本仓库没有引入 Kubernetes API Client、LIST/WATCH、工作队列、远程执行器、服务端或数据库。安全验证由宿主在每次派发前调用，并由宿主在真实写入时再次执行平台并发保护；它不是授权系统。
 
 ```bash
 moon fmt --check
