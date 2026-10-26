@@ -50,6 +50,7 @@ moon test --deny-warn
 项目使用 Apache-2.0 许可证；KubeMoon 依赖也是 Apache-2.0，仅由独立示例模块固定在 `0.1.1`，核心模块不依赖它。本仓库没有引入 Kubernetes API Client、LIST/WATCH、工作队列、远程执行器、服务端或数据库。安全验证由宿主在每次派发前调用，并由宿主在真实写入时再次执行平台并发保护；它不是授权系统。
 
 ```bash
+moon update
 moon fmt --check
 moon info
 moon check --target all --deny-warn

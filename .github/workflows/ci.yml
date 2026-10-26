@@ -27,6 +27,9 @@ jobs:
       - name: Check toolchain
         run: moon version --all
 
+      - name: Refresh MoonBit registry
+        run: moon update
+
       - name: Check formatting
         run: moon fmt --check
 
